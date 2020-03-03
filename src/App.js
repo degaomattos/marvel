@@ -1,26 +1,34 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react'
+import './App.css'
+import routes from './core/routes'
+import { Switch, Route } from 'react-router-dom'
+import Header from './components/header'
+import { MuiThemeProvider } from '@material-ui/core'
+import { makeStyles } from '@material-ui/core/styles'
+import muiTheme from './components/theme/muiTheme'
+
+const useStyles = makeStyles({
+  page: {
+    paddingTop: '52px'
+  }
+})
 
 function App() {
+  const classes = useStyles()
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    <MuiThemeProvider theme={muiTheme}>
+      <Header />
+      <div className={classes.page}>
+        <Switch>
+          {
+            routes.map((route, k) => (
+              <Route key={k} {...route}/>
+            ))
+          }
+        </Switch>
+      </div>
+    </MuiThemeProvider>
+  )
 }
 
-export default App;
+export default App
