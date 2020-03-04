@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import Axios from 'axios'
-import { Container, CardHeader, Grid, Card, makeStyles, Typography } from '@material-ui/core'
+import { Container, CardHeader, Grid, Card, makeStyles, Typography, CardActionArea } from '@material-ui/core'
+import { useHistory } from 'react-router-dom'
+import { Characters } from '../../core/services/characters.service'
+import { Scrollbars } from 'react-custom-scrollbars'
 
 
 const useStyles = makeStyles({
@@ -41,40 +44,62 @@ const useStyles = makeStyles({
     }
 })
 
-function Main() {
+function Main(props) {
     const classes = useStyles()
     const [ characters, setCharacters ] = useState([])
+    const [ offset, setOffset ] = useState(0)
+    const [ size, setSize ] = useState(0)
+    const history = useHistory()
+    async function fetchData () {
+        const response = await Characters(offset)
+        setCharacters([
+            ...characters,
+            ...response.data.data.results
+        ])
+        setSize(response.data.data.total)
+    }
     useEffect(() => {
-        return Axios({
-            method: 'GET',
-            url: ` https://gateway.marvel.com/v1/public/characters?ts=${JSON.stringify(new Date())}&apikey=6aeddf0792f14178ca6bdb530bdab9a3` 
-        })
-        .then(response => {
-            setCharacters(response.data.data.results)
-        })
-    }, [])
+        fetchData()
+    }, [offset])
+
+    function handleScroll(values){
+        const { scrollTop, scrollHeight, clientHeight } = values  
+        if(scrollTop + clientHeight == scrollHeight && offset < size) {
+            setOffset(offset + 20)
+        }
+    }
     return (
         <Container>
             <Typography className={classes.title}>PERSONAGENS</Typography>
-            <Grid container spacing={2} alignItems="stretch">
-                {
-                    characters && characters.map(item => 
-                        <Grid item xs={3}>
-                            <Card className={classes.card}>
-                                <CardHeader
-                                    subheader={item.name}
-                                />
-                                <div>
-                                    <img
-                                        className={classes.media}
-                                        src={`${item.thumbnail.path}.${item.thumbnail.extension}`}
-                                    />
-                                </div>
-                            </Card> 
-                        </Grid>
-                    )
-                }
-            </Grid>
+                <Scrollbars
+                    renderTrackHorizontal={props => <div {...props} className="track-horizontal" style={{display:"none"}}/>}
+                    renderThumbHorizontal={props => <div {...props} className="thumb-horizontal" style={{display:"none"}}/>}
+                    autoHeight 
+                    autoHeightMin={window.innerHeight - 160 }
+                    onScrollFrame={handleScroll}
+                >
+                    <Grid container spacing={2} alignItems="stretch">
+                        {
+                            characters && characters.map(item => 
+                                <Grid item xs={3}>
+                                    <Card className={classes.card}>
+                                        <CardActionArea onClick={() => history.push(`/character/${item.id}`)}>
+                                        <CardHeader
+                                            subheader={item.name}
+                                        />
+                                        <div>
+                                            <img
+                                                className={classes.media}
+                                                src={`${item.thumbnail.path}.${item.thumbnail.extension}`}
+                                            />
+                                        </div>
+                                        </CardActionArea>
+                                    </Card> 
+                                </Grid>
+                            )
+                        }
+                    </Grid>
+                </Scrollbars>
         </Container>
     )
 }

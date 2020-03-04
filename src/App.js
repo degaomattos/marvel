@@ -21,8 +21,8 @@ function App() {
       <div className={classes.page}>
         <Switch>
           {
-            routes.map((route, k) => (
-              <Route key={k} {...route}/>
+            routes.map(route => (
+              <Route key={route.key} {...route}/>
             ))
           }
         </Switch>
