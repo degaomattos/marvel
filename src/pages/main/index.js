@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import Axios from 'axios'
-import { Container, CardHeader, Grid, Card, makeStyles, Typography, CardActionArea } from '@material-ui/core'
+import { Container, CardHeader, Grid, Card, makeStyles, Typography, CardActionArea, TextField, Button, Chip } from '@material-ui/core'
 import { useHistory } from 'react-router-dom'
-import { Characters } from '../../core/services/characters.service'
 import { Scrollbars } from 'react-custom-scrollbars'
+import { connect } from 'react-redux'
+import { charactersRequest, searchCharactersRequest, clearSearch } from '../../core/store/actions/characters.action'
 
 
 const useStyles = makeStyles({
@@ -46,62 +46,125 @@ const useStyles = makeStyles({
 
 function Main(props) {
     const classes = useStyles()
-    const [ characters, setCharacters ] = useState([])
+    //const [ characters, setCharacters ] = useState([])
     const [ offset, setOffset ] = useState(0)
-    const [ size, setSize ] = useState(0)
+    //const [ size, setSize ] = useState(0)
+    const [ search, setSearch ] = useState('')
+    const [ term, setTerm ] = useState()
     const history = useHistory()
-    async function fetchData () {
-        const response = await Characters(offset)
-        setCharacters([
-            ...characters,
-            ...response.data.data.results
-        ])
-        setSize(response.data.data.total)
+    const { characters } = props 
+
+    function searchData () {
+        props.searchCharactersRequest(0, search, 100)
+        setTerm(search)
     }
     useEffect(() => {
-        fetchData()
-    }, [offset])
+        props.charactersRequest(offset)
+    }, [ offset && term ])
 
     function handleScroll(values){
         const { scrollTop, scrollHeight, clientHeight } = values  
-        if(scrollTop + clientHeight == scrollHeight && offset < size) {
+        if(scrollTop + clientHeight === scrollHeight && !term) {
             setOffset(offset + 20)
         }
     }
+
+    function clearSearch () {
+        props.clearSearch()
+        setTerm()
+        setTimeout(() => {
+            if(offset === 0){
+                props.charactersRequest(offset)
+            }
+            else {
+                setOffset(0)
+            }
+        }, 500)
+    }
     return (
         <Container>
-            <Typography className={classes.title}>PERSONAGENS</Typography>
-                <Scrollbars
-                    renderTrackHorizontal={props => <div {...props} className="track-horizontal" style={{display:"none"}}/>}
-                    renderThumbHorizontal={props => <div {...props} className="thumb-horizontal" style={{display:"none"}}/>}
-                    autoHeight 
-                    autoHeightMin={window.innerHeight - 160 }
-                    onScrollFrame={handleScroll}
-                >
-                    <Grid container spacing={2} alignItems="stretch">
+            <Grid container spacing={2} alignItems="center">
+                <Grid item xs={3}>
+                    <Typography className={classes.title}>PERSONAGENS</Typography>
+                </Grid>
+                <Grid item xs={7}>
+                    <TextField
+                        label="Encontrar Personagem"
+                        fullWidth
+                        onChange={(evt) => setSearch(evt.target.value)}
+                    />
+                </Grid>
+                <Grid item xs={2}>
+                    <Button 
+                        color="primary" 
+                        variant="contained" 
+                        fullWidth 
+                        onClick={searchData}
+                        disabled={!search}
+                    >Pesquisar</Button>
+                </Grid>
+            </Grid>
+            <Scrollbars
+                renderTrackHorizontal={props => <div {...props} className="track-horizontal" style={{display:"none"}}/>}
+                renderThumbHorizontal={props => <div {...props} className="thumb-horizontal" style={{display:"none"}}/>}
+                autoHeight 
+                autoHeightMin={window.innerHeight - 180 }
+                onScrollFrame={handleScroll}
+            >
+                <Grid container spacing={2} alignItems="stretch">
+                    <Grid item xs={12}>
                         {
-                            characters && characters.map(item => 
-                                <Grid item xs={3}>
-                                    <Card className={classes.card}>
-                                        <CardActionArea onClick={() => history.push(`/character/${item.id}`)}>
-                                        <CardHeader
-                                            subheader={item.name}
-                                        />
-                                        <div>
-                                            <img
-                                                className={classes.media}
-                                                src={`${item.thumbnail.path}.${item.thumbnail.extension}`}
-                                            />
-                                        </div>
-                                        </CardActionArea>
-                                    </Card> 
-                                </Grid>
-                            )
+                            term && 
+                            <>
+                                <Typography>Termo pesquisado:</Typography>
+                                <Chip label={term} onDelete={clearSearch}/>
+                            </>
                         }
                     </Grid>
-                </Scrollbars>
+                    {
+                        characters && characters.map((item, k) => 
+                            <Grid item xs={3} key={k}>
+                                <Card className={classes.card}>
+                                    <CardActionArea onClick={() => history.push(`/character/${item.id}`)}>
+                                    <CardHeader
+                                        subheader={item.name}
+                                    />
+                                    <div>
+                                        <img
+                                            className={classes.media}
+                                            alt=""
+                                            src={`${item.thumbnail.path}.${item.thumbnail.extension}`}
+                                        />
+                                    </div>
+                                    </CardActionArea>
+                                </Card> 
+                            </Grid>
+                        )
+                    }
+                </Grid>
+            </Scrollbars>
         </Container>
     )
 }
 
-export default Main
+const mapStateToProps = (state) => ({
+    characters: state.characters.characters
+})
+
+const mapDispatchToProps = (dispatch) => {
+    return {
+        charactersRequest: (offset, nameStartsWith, limit) => {
+            dispatch(charactersRequest(offset, nameStartsWith, limit))
+        },
+        searchCharactersRequest: (offset, nameStartsWith, limit) => {
+            dispatch(searchCharactersRequest(offset, nameStartsWith, limit))
+        },
+        clearSearch: () => {
+            dispatch(clearSearch())
+        }
+    }
+}
+
+const ConnectedMain = connect(mapStateToProps, mapDispatchToProps)(Main)
+
+export default ConnectedMain
