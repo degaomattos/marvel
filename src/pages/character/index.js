@@ -105,6 +105,7 @@ function Character (props) {
                                     label="Descrição" 
                                     fullWidth onChange={(evt) => setTmpDesc(evt.target.value)} 
                                     defaultValue={character.description} 
+                                    multiline
                                 /> 
                             </>
                         }
